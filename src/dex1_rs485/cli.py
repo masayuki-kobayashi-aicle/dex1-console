@@ -133,7 +133,7 @@ def cmd_cycle(cfg: Config, args) -> int:
 
 def cmd_gui(cfg: Config, args) -> int:
     from .gui.server import serve
-    return serve(cfg, args.port, not args.no_open, args.skip_preflight)
+    return serve(cfg, args.port, not args.no_open, args.skip_preflight, write_log=args.log)
 
 
 def cmd_export(cfg: Config, args) -> int:

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Fix: `dex1 gui --no-log` was accepted but ignored, and the GUI always wrote a JSONL log. It now writes none (the log view and
+  the Save button still work). Found after 0.1.0, which has this bug.
+
 ## 0.1.0 (2026-11-23, pre-release)
 
 - GUI: English / Japanese switch; position, speed and strength sliders; motor id at connect; auto zero (close until the finger
