@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.venv/
+.DS_Store
+
+# Runtime output and per-machine files (never commit)
+*.rrd
+*.jsonl

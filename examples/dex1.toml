@@ -1,0 +1,31 @@
+# dex1 --config examples/dex1.toml ...  (values shown are the defaults)
+log_dir = "~/.local/share/dex1-rs485/logs"
+lang = "auto"      # messages: "auto" (from the locale), "en" or "ja"
+
+[hand]
+motor_id = 7
+kp_raw = 102
+kd_raw = 1
+
+[limits]
+position_min_rad = -0.2
+open_limit_rad = 5.2
+closed_target_rad = 0.1
+open_target_rad = 5.1
+max_track_err_rad = 0.6
+max_temp_c = 60
+max_missed_replies = 3
+max_speed_rad_s = 1.5
+min_strength_pct = 10.0     # strength = position gain as a share of kp_raw (not a calibrated torque)
+max_strength_pct = 100.0
+zero_speed_rad_s = 0.4      # auto zero: closing speed. The zero_* values are choices, not measurements
+zero_lead_rad = 0.15
+zero_kp_raw = 50
+zero_stall_s = 0.6
+zero_stall_move_rad = 0.01
+zero_tolerance_rad = 0.5
+
+[transport]
+kind = "espprog"      # or "mock"
+port_b = "auto"       # or e.g. "/dev/ttyUSB1"
+baud = 6000000

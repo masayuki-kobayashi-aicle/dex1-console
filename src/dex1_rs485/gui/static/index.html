@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="__LANG__">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dex1 Control</title>
+<style>
+:root {
+  --bg: #f5f6f8; --card: #ffffff; --ink: #1c2230; --muted: #667085; --line: #e3e6ec;
+  --accent: #4f6bed; --accent-ink: #ffffff; --ok: #1a8f5a; --warn: #b7791f; --err: #d33c3c;
+  --log-bg: #101521; --log-ink: #d7dcea; --log-dim: #7f8aa6; --shadow: 0 1px 2px rgba(16,24,40,.06);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d111b; --card: #161c2b; --ink: #e8ebf3; --muted: #9aa4bd; --line: #262e43;
+    --accent: #7087ff; --accent-ink: #0d111b; --ok: #3ecf8e; --warn: #f0b04a; --err: #ff6b6b;
+    --log-bg: #0a0e17; --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif; }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 14px 24px; border-bottom: 1px solid var(--line); background: var(--card); }
+header h1 { margin: 0; font-size: 18px; font-weight: 650; letter-spacing: .2px; }
+header h1 small { color: var(--muted); font-weight: 500; margin-left: 6px; }
+.pill { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.seg { display: inline-flex; flex-shrink: 0; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; padding: 4px 12px; font-size: 13px; white-space: nowrap; background: transparent; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.pill i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.pill.on i { background: var(--ok); } .pill.busy i { background: var(--warn); animation: pulse 1s infinite; }
+@keyframes pulse { 50% { opacity: .3; } }
+main { display: flex; flex-direction: column; gap: 16px; padding: 16px 24px 24px; max-width: 1400px; margin: 0 auto; }
+.band { position: sticky; top: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow); }
+.conn { flex: 0 0 auto; }
+.live { flex: 1 1 420px; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "g s" "t s"; gap: 0 24px; align-items: center; }
+.live .gauge { grid-area: g; }
+.live .stats { grid-area: t; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
+.live .stop { grid-area: s; width: auto; padding: 12px 28px; }
+.work { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; }
+.work .col { flex: 0 1 380px; min-width: 300px; }
+.work .logcard { flex: 999 1 480px; min-width: 0; align-self: stretch; }
+details.pfsteps summary { cursor: pointer; font-size: 13px; color: var(--muted); padding: 8px 0 0; }
+.sub { margin-top: 14px; }
+@media (max-width: 960px) { .work .col { flex-basis: 100%; } }
+@media (max-width: 720px) {
+  main { padding: 12px 16px 24px; gap: 12px; }
+  .band { display: contents; }
+  .conn, .live { flex: none; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; box-shadow: var(--shadow); }
+  .live { position: sticky; top: 0; z-index: 2; grid-template-areas: "g s" "t t"; gap: 0 12px; }
+  .live .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 10px; }
+  .live .stat strong { font-size: 17px; }
+  .live .stop { padding: 10px 18px; }
+}
+.col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; box-shadow: var(--shadow); }
+.card h2 { margin: 0 0 12px; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.row + .row { margin-top: 10px; }
+button { font: inherit; font-weight: 600; padding: 9px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); cursor: pointer; transition: transform .05s, background .15s; }
+button:hover:not(:disabled) { background: var(--bg); }
+button:active:not(:disabled) { transform: translateY(1px); }
+button:disabled { opacity: .4; cursor: not-allowed; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+button.primary:hover:not(:disabled) { background: var(--accent); filter: brightness(1.08); }
+button.big { flex: 1; padding: 14px 16px; font-size: 16px; }
+button.stop { width: 100%; padding: 14px; font-size: 16px; background: var(--err); border-color: var(--err); color: #fff; }
+button.stop:hover:not(:disabled) { background: var(--err); filter: brightness(1.08); }
+label { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+input[type=number] { width: 80px; font: inherit; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.meta { color: var(--muted); font-size: 13px; margin-top: 10px; overflow-wrap: anywhere; }
+.badge { font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--bg); color: var(--muted); }
+.badge.ok { color: var(--ok); } .badge.err { color: var(--err); }
+.gauge { position: relative; height: 10px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); margin: 6px 0 14px; }
+.gauge b { position: absolute; top: -5px; width: 4px; height: 18px; border-radius: 2px; background: var(--accent); left: 0; transition: left .08s linear; }
+.stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.stat span { display: block; font-size: 12px; color: var(--muted); }
+.stat strong { font-size: 20px; font-variant-numeric: tabular-nums; }
+.stat strong.err { color: var(--err); }
+.logcard { display: flex; flex-direction: column; padding: 0; overflow: hidden; background: var(--log-bg); border-color: var(--log-bg); min-height: 420px; }
+.logbar { display: flex; align-items: center; gap: 14px; padding: 10px 14px; border-bottom: 1px solid #ffffff14; color: var(--log-dim); flex-wrap: wrap; }
+.logbar h2 { margin: 0 auto 0 0; color: var(--log-ink); }
+.logbar label { color: var(--log-dim); }
+.logbar button { padding: 4px 12px; font-size: 12px; background: transparent; color: var(--log-ink); border-color: #ffffff24; }
+.logbar button:hover:not(:disabled) { background: #ffffff10; }
+.field { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+.field + .field { margin-top: 12px; }
+.field .top { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--muted); }
+.field .top output { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+input[type=range] { width: 100%; accent-color: var(--accent); margin: 4px 0; }
+.ends { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-top: -2px; }
+select { font: inherit; font-size: 12px; padding: 3px 8px; border-radius: 8px; border: 1px solid #ffffff24; background: transparent; color: var(--log-ink); }
+select option { color: #1c2230; }
+.logbar .grow { margin-right: auto; }
+.logcount { font-size: 12px; color: var(--log-dim); }
+#log { flex: 1; overflow: auto; margin: 0; padding: 10px 14px; height: calc(100vh - 300px); min-height: 360px; font: 12.5px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--log-ink); }
+#log { padding: 6px 0; }
+#log .ln { display: grid; grid-template-columns: 92px 84px 1fr; gap: 0 10px; padding: 1px 14px 1px 11px; border-left: 3px solid transparent; }
+#log .ln > span { white-space: pre-wrap; word-break: break-word; }
+#log .ts, #log .tag { color: var(--log-dim); }
+#log .tag { font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; padding-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#log .ln.ok { border-left-color: #3ecf8e; } #log .ln.ok .tag, #log .ln.ok .tx { color: #3ecf8e; }
+#log .ln.warn { border-left-color: #f0b04a; background: #f0b04a12; } #log .ln.warn .tag, #log .ln.warn .tx { color: #f0b04a; }
+#log .ln.error { border-left-color: #ff7b7b; background: #ff7b7b14; } #log .ln.error .tag, #log .ln.error .tx { color: #ff7b7b; }
+#log .ln.dim .tx { color: var(--log-dim); }
+#log .job { margin: 10px 0 4px; padding: 3px 14px; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--log-ink); background: #ffffff0f; }
+#log.hide-steps .step { display: none; }
+#log.f-msgs .dim { display: none; }
+#log.f-bad .ln:not(.warn):not(.error) { display: none; }
+@media (max-width: 560px) { #log .ln { grid-template-columns: 1fr; } #log .tag { display: none; } }
+dialog { border: 1px solid var(--line); border-radius: 16px; padding: 22px; max-width: 460px; background: var(--card); color: var(--ink); box-shadow: 0 20px 60px rgba(0,0,0,.35); }
+dialog::backdrop { background: rgba(8,12,24,.55); }
+dialog h3 { margin: 0 0 8px; font-size: 16px; }
+dialog p { margin: 0 0 14px; white-space: pre-wrap; }
+dialog .why { color: var(--muted); font-size: 13px; }
+dialog ul { margin: 0 0 18px; padding-left: 18px; font-size: 13px; color: var(--muted); }
+.steps { margin: 10px 0 0; padding-left: 20px; font-size: 13px; color: var(--muted); }
+.steps li { margin: 3px 0; }
+.steps b { color: var(--ink); font-weight: 600; }
+dialog .row { justify-content: flex-end; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Dex1 <small data-i="subtitle"></small></h1>
+  <div class="pill" id="pill"><i></i><span id="pillText"></span></div>
+  <div class="seg" role="group" aria-label="Language"><button id="lang-en" data-lang="en">EN</button><button id="lang-ja" data-lang="ja">日本語</button></div>
+</header>
+<main>
+  <section class="band">
+    <div class="conn">
+      <div class="row">
+        <label><span data-i="motorId"></span><input type="number" id="motorId" min="0" max="15" step="1" value="7"></label>
+        <button class="primary" id="connect" data-i="connect"></button>
+        <button id="disconnect" data-i="disconnect"></button>
+      </div>
+    </div>
+    <div class="live">
+      <div class="gauge"><b id="marker"></b></div>
+      <div class="stats">
+        <div class="stat"><span data-i="position"></span><strong id="vQ">–</strong></div>
+        <div class="stat"><span data-i="temp"></span><strong id="vT">–</strong></div>
+        <div class="stat"><span data-i="volts"></span><strong id="vV">–</strong></div>
+        <div class="stat"><span data-i="torque"></span><strong id="vTq">–</strong></div>
+        <div class="stat"><span>MError</span><strong id="vE">–</strong></div>
+      </div>
+      <button class="stop" id="stop" data-i="stop"></button>
+    </div>
+  </section>
+  <div class="work">
+  <div class="col">
+    <section class="card">
+      <h2 data-i="setup"></h2>
+      <div class="row">
+        <button id="preflight" data-i="runPreflight"></button>
+        <span class="badge" id="pfBadge"></span>
+      </div>
+      <div class="meta" data-i="pfHint"></div>
+      <details class="pfsteps" id="pfDetails" open>
+        <summary data-i="pfSteps"></summary>
+        <ol class="steps">
+          <li data-i="pf1" data-html></li><li data-i="pf2" data-html></li><li data-i="pf3" data-html></li>
+          <li data-i="pf4" data-html></li><li data-i="pf5" data-html></li>
+        </ol>
+      </details>
+      <div class="row sub">
+        <button id="zero" data-i="autoZero"></button>
+        <span class="badge" id="zeroBadge"></span>
+      </div>
+      <div class="meta" data-i="zeroHint"></div>
+      <div class="meta" id="meta"></div>
+    </section>
+    <section class="card">
+      <h2 data-i="controls"></h2>
+      <div class="row">
+        <button class="big primary" id="open" data-i="open"></button>
+        <button class="big" id="close" data-i="close"></button>
+      </div>
+      <div class="field">
+        <div class="top"><span data-i="angle"></span><span><input type="number" id="angle" value="2.5" step="0.05"> rad</span></div>
+        <input type="range" id="angleRange" min="-0.2" max="5.2" step="0.05" value="2.5">
+        <div class="ends"><span data-i="closedEnd"></span><span data-i="openEnd"></span></div>
+      </div>
+      <div class="field">
+        <div class="top"><span data-i="speed"></span><output id="speedVal">1.0 rad/s</output></div>
+        <input type="range" id="speedRange" min="0.1" max="1.5" step="0.1" value="1.0">
+        <div class="ends"><span data-i="slow"></span><span data-i="fast"></span></div>
+      </div>
+      <div class="field">
+        <div class="top"><span data-i="strength"></span><output id="strengthVal">100 %</output></div>
+        <input type="range" id="strengthRange" min="10" max="100" step="5" value="100">
+        <div class="ends"><span data-i="soft"></span><span data-i="full"></span></div>
+        <div class="meta" data-i="strengthHint" style="margin-top:2px"></div>
+      </div>
+      <div class="row">
+        <button id="go" class="primary" data-i="go"></button>
+        <label><input type="checkbox" id="onRelease"><span data-i="onRelease"></span></label>
+      </div>
+      <div class="meta" data-i="stopHint"></div>
+    </section>
+  </div>
+  <section class="card logcard">
+    <div class="logbar">
+      <h2 data-i="log"></h2>
+      <span class="logcount grow" id="logCount"></span>
+      <select id="filter" aria-label="filter"><option value="all" data-i="fAll"></option><option value="msgs" data-i="fMsgs"></option><option value="bad" data-i="fBad"></option></select>
+      <label><input type="checkbox" id="showSteps"><span data-i="steps"></span></label>
+      <label><input type="checkbox" id="follow" checked><span data-i="follow"></span></label>
+      <button id="save" data-i="save"></button>
+      <button id="copy" data-i="copy"></button>
+      <button id="clear" data-i="clear"></button>
+    </div>
+    <div id="log" class="hide-steps" role="log" aria-live="polite"></div>
+  </section>
+  </div>
+</main>
+<dialog id="ask"><h3 id="askTitle"></h3><p class="why" id="askWhy"></p><p id="askText"></p><ul id="askHints"></ul><div class="row" id="askButtons"></div></dialog>
+<script>
+"use strict";
+const TOKEN = "__TOKEN__", MAX_LINES = 3000;
+const DICT = {
+  en: { subtitle: "RS485 gripper", setup: "Setup", pfSteps: "What the five steps do", connect: "Connect", disconnect: "Disconnect",
+    runPreflight: "Run preflight", pfHint: "Must pass before the hand moves. Five steps, in order; it stops at the first one that fails. The hand moves in steps 4 and 5.",
+    pf1: "<b>Environment</b>: the ESP-Prog is found and no other hand program is running (nothing moves).",
+    pf2: "<b>Link</b>: asks the hand for its state ten times and checks that it answers (nothing moves).",
+    pf3: "<b>State</b>: motor id, error code, temperature and voltage are in range (nothing moves).",
+    pf4: "<b>Calibration</b>: the hand closes <b>by itself</b>, slowly, until the finger stops. That point becomes 0 rad (this session only; nothing is written to the hand). Then you check by eye that it is fully closed.",
+    pf5: "<b>Motion</b>: the hand opens a little and closes again, to show that it follows commands.",
+    askTitle: "Preflight, step 4: calibration (visual check)",
+    askWhy: "The hand has just closed itself, slowly, until the finger stopped. The stop position is now 0 rad. This question is the only check that the stop was the fully closed position and not something in the way.",
+    askYesHint: "Yes: the fingers are fully closed. The zero is kept and the preflight goes on to the test move.",
+    askNoHint: "No: something is in the way, or it is not closed. The previous zero is restored and the preflight fails; clear the hand and run it again.",
+    controls: "Move", open: "Open", close: "Close", angle: "Angle [rad]", speed: "Speed (peak) [rad/s]", slow: "slow", fast: "fast", go: "Go",
+    stop: "STOP (brake)", stopHint: "Esc also stops. A running move brakes at once.",
+    position: "Position [rad]", temp: "Temperature [°C]", volts: "Voltage [V]", log: "Live log",
+    steps: "control steps", follow: "follow", copy: "Copy", clear: "Clear",
+    disconnected: "Disconnected", connected: "Connected", busy: "Working: ", lost: "Server stopped",
+    pfNone: "not run", pfOk: "passed", pfNg: "failed", skipped: "skipped (--skip-preflight)",
+    yes: "Yes", no: "No", ok: "OK", noReply: "NO REPLY", transport: "transport", log_: "log",
+    motorId: "Motor ID", closedEnd: "closed", openEnd: "open", strength: "Strength [% of default gain]", soft: "soft", full: "full",
+    onRelease: "move on release", autoZero: "Auto zero",
+    zeroHint: "Closes slowly until the finger stops, and calls that point 0 (this session only; the hand keeps no zero). It starts at once: check by eye that the hand is fully closed, then rerun the preflight.",
+    zeroNone: "zero: factory", zeroSet: "zero offset", torque: "Torque (raw)", save: "Save", fAll: "All", fMsgs: "Messages", fBad: "Problems",
+    saved: "Saved: ", copied: "Copied", lines: "lines", strengthHint: "Strength is a position gain, not a calibrated torque.",
+    job_connect: "connect", job_disconnect: "disconnect", job_status: "status", job_preflight: "preflight", job_zero: "auto zero",
+    job_open: "open", job_close: "close", job_go: "go", job_brake: "brake" },
+  ja: { subtitle: "RS485 グリッパー", setup: "セットアップ", pfSteps: "5 段階の内容", connect: "接続", disconnect: "切断",
+    runPreflight: "プリフライトを実行", pfHint: "合格するまでハンドは動かせない。5 段階を順に行い、不合格の段階で止まる。ハンドが動くのは 4 と 5。",
+    pf1: "<b>環境</b>: ESP-Prog が見え、ほかのハンド用プログラムが動いていない（動かない）。",
+    pf2: "<b>接続</b>: ハンドに状態を 10 回問い合わせ、返信が来るか確認する（動かない）。",
+    pf3: "<b>状態</b>: モーター ID、エラーコード、温度、電圧が範囲内か確認する（動かない）。",
+    pf4: "<b>校正</b>: ハンドが<b>自分で</b>ゆっくり閉じ、指が止まるまで続ける。止まった所を 0 rad とする（このセッションだけ。ハンドには書かない）。そのあと、閉じ切っているか目視で確認する。",
+    pf5: "<b>動作</b>: ハンドが少し開いて閉じ、指令どおりに動くことを確かめる。",
+    askTitle: "プリフライト 4 段階目: 校正（目視確認）",
+    askWhy: "ハンドは今、指が止まるまでゆっくり閉じた。止まった位置を 0 rad にしている。その位置が「閉じ切った位置」で、何かに当たって止まったのではないことを確かめられるのは、この質問だけ。",
+    askYesHint: "はい: 指は閉じ切っている。ゼロを採用し、試験動作に進む。",
+    askNoHint: "いいえ: 何かが挟まっている、または閉じ切っていない。前のゼロに戻し、プリフライトは不合格になる。ハンドの周りを片付けてやり直す。",
+    controls: "動かす", open: "開く", close: "閉じる", angle: "角度 [rad]", speed: "速度（最大）[rad/s]", slow: "遅", fast: "速", go: "移動",
+    stop: "停止（BRAKE）", stopHint: "Esc キーでも止まる。動いている途中でも、すぐ BRAKE する。",
+    position: "位置 [rad]", temp: "温度 [℃]", volts: "電圧 [V]", log: "リアルタイムログ",
+    steps: "制御ステップ", follow: "追従", copy: "コピー", clear: "消去",
+    disconnected: "未接続", connected: "接続中", busy: "実行中: ", lost: "サーバーが止まった",
+    pfNone: "未実施", pfOk: "合格", pfNg: "不合格", skipped: "省略（--skip-preflight）",
+    yes: "はい", no: "いいえ", ok: "OK", noReply: "返信なし", transport: "通信", log_: "ログ",
+    motorId: "モーター ID", closedEnd: "閉", openEnd: "開", strength: "強さ［標準ゲインの %］", soft: "弱", full: "標準",
+    onRelease: "離したら動く", autoZero: "自動ゼロ合わせ",
+    zeroHint: "ゆっくり閉じ、指が止まった所を 0 とする（このセッションだけ。ハンドには保存しない）。押すとすぐ始まる。閉じ切ったか目視で確認し、プリフライトをやり直す。",
+    zeroNone: "ゼロ: 工場値", zeroSet: "ゼロ補正", torque: "トルク（生値）", save: "保存", fAll: "すべて", fMsgs: "メッセージ", fBad: "問題だけ",
+    saved: "保存した: ", copied: "コピーした", lines: "行", strengthHint: "強さは位置ゲインで、校正したトルクではない。",
+    job_connect: "接続", job_disconnect: "切断", job_status: "状態", job_preflight: "プリフライト", job_zero: "自動ゼロ合わせ",
+    job_open: "開く", job_close: "閉じる", job_go: "移動", job_brake: "ブレーキ" },
+};
+let LANG = "__LANG__" === "ja" ? "ja" : "en", I18N = DICT[LANG];
+const $ = (id) => document.getElementById(id);
+const logEl = $("log");
+let state = { connected: false, busy: null, preflight_ok: null, limits: { position_min_rad: -0.2, open_limit_rad: 5.2 } };
+let lastId = 0, pending = false, idInit = false, lastPf;
+
+function applyLang(lang) {
+  LANG = lang === "ja" ? "ja" : "en";
+  I18N = DICT[LANG];
+  document.documentElement.lang = LANG;
+  document.querySelectorAll("[data-i]").forEach((el) => {
+    if (!el.hasAttribute("data-html")) { el.textContent = I18N[el.dataset.i]; return; }
+    // only <b>..</b> is allowed in these dictionary strings; build nodes instead of using innerHTML
+    el.replaceChildren(...I18N[el.dataset.i].split(/(<b>.*?<\/b>)/).filter(Boolean).map((part) => {
+      const m = part.match(/^<b>(.*)<\/b>$/);
+      if (!m) return document.createTextNode(part);
+      const b = document.createElement("b"); b.textContent = m[1]; return b;
+    }));
+  });
+  document.querySelectorAll("[data-lang]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === LANG)));
+}
+applyLang(LANG);
+
+const SAVE_MAX = 20000, saved = [];
+let prevBusy = null;
+const pad = (n, w = 2) => String(n).padStart(w, "0");
+function clock(at) {
+  const d = at ? new Date(at * 1000) : new Date();
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${pad(d.getMilliseconds(), 3)}`;
+}
+function updateCount() { $("logCount").textContent = `${saved.length} ${I18N.lines}`; }
+
+function push(el, plain) {
+  logEl.append(el);
+  while (logEl.childElementCount > MAX_LINES) logEl.firstChild.remove();
+  saved.push(plain);
+  if (saved.length > SAVE_MAX) saved.shift();
+  if (!pending) { pending = true; requestAnimationFrame(() => { pending = false; updateCount(); if ($("follow").checked) logEl.scrollTop = logEl.scrollHeight; }); }
+}
+
+function cell(cls, text) { const el = document.createElement("span"); el.className = cls; el.textContent = text; return el; }
+
+function line(text, cls, at, tag) {
+  const div = document.createElement("div");
+  div.className = "ln " + (cls || "");
+  const label = tag || (cls === "ok" ? "ok" : cls === "warn" ? "warn" : cls === "error" ? "error" : "info");
+  const stamp = clock(at);
+  div.append(cell("ts", stamp), cell("tag", label), cell("tx", text));
+  push(div, `${stamp}  ${label.toUpperCase().padEnd(5)}  ${text.replace(/\n/g, "\n" + " ".repeat(21))}`);
+}
+
+function jobHeader(name, at) {
+  const div = document.createElement("div");
+  const text = `${I18N["job_" + name] || name}  ·  ${clock(at)}`;
+  div.className = "job";
+  div.textContent = text;
+  push(div, `\n=== ${text} ===`);
+}
+
+function rowText(e) {
+  if (!e.ok) return `${e.kind}  ${I18N.noReply}`;
+  const rx = e.first_rx_ms == null ? "" : `  ·  rx ${e.first_rx_ms.toFixed(1)} ms`;
+  const extra = e.step ? `  #${e.step} → ${Number(e.target).toFixed(3)}` : "";
+  return `${e.kind}${extra}  ·  q ${e.q.toFixed(3)}  ·  ${e.temp_case}/${e.temp_coil} °C  ·  ${e.volts.toFixed(1)} V  ·  τ ${e.torque}  ·  E 0x${e.merror.toString(16)}${rx}`;
+}
+
+function msgClass(e) {
+  if (/^\s*(PASS|合格)\b/.test(e.text)) return "ok";
+  if (/^\s*(FAIL|不合格)/.test(e.text)) return "error";
+  return e.level && e.level !== "info" ? e.level : "";
+}
+
+function showTelemetry(t) {
+  if (!t || t.q === undefined) return;
+  const lim = state.limits, span = lim.open_limit_rad - lim.position_min_rad;
+  $("marker").style.left = `calc(${Math.min(1, Math.max(0, (t.q - lim.position_min_rad) / span)) * 100}% - 2px)`;
+  $("vQ").textContent = t.q.toFixed(3);
+  $("vT").textContent = `${t.temp_case} / ${t.temp_coil}`;
+  $("vV").textContent = t.volts.toFixed(1);
+  $("vTq").textContent = t.torque === undefined ? "–" : String(t.torque);
+  $("vE").textContent = "0x" + t.merror.toString(16);
+  $("vE").className = t.merror ? "err" : "";
+}
+
+function render() {
+  const s = state, idle = !s.busy, pfPassed = s.preflight_ok === true || s.skip_preflight;
+  const pill = $("pill");
+  pill.className = "pill " + (s.busy ? "busy" : s.connected ? "on" : "");
+  $("pillText").textContent = s.busy ? I18N.busy + (I18N["job_" + s.busy] || s.busy) : s.connected ? I18N.connected : I18N.disconnected;
+  $("connect").disabled = s.connected || !idle;
+  $("disconnect").disabled = !s.connected || !idle;
+  $("preflight").disabled = !s.connected || !idle;
+  $("zero").disabled = !s.connected || !idle;
+  $("motorId").disabled = s.connected || !!s.busy;
+  for (const id of ["open", "close", "go"]) $(id).disabled = !s.connected || !idle || !pfPassed;
+  $("stop").disabled = !s.connected && idle;
+  const badge = $("pfBadge");
+  badge.textContent = s.skip_preflight ? I18N.skipped : s.preflight_ok === true ? I18N.pfOk : s.preflight_ok === false ? I18N.pfNg : I18N.pfNone;
+  badge.className = "badge " + (s.preflight_ok === true ? "ok" : s.preflight_ok === false ? "err" : "");
+  if (s.preflight_ok !== lastPf) { lastPf = s.preflight_ok; $("pfDetails").open = s.preflight_ok !== true; }  // fold the steps after a pass; the person can still open them
+  $("meta").textContent = `${I18N.transport}: ${s.transport || "–"}, id ${s.motor_id ?? "–"}` + (s.log_path ? `\n${I18N.log_}: ${s.log_path}` : "");
+  $("meta").style.whiteSpace = "pre-wrap";
+  const lim = s.limits;
+  if (lim.position_min_rad !== undefined) for (const id of ["angleRange", "angle"]) { $(id).min = lim.position_min_rad; $(id).max = lim.open_limit_rad; }
+  if (lim.min_strength_pct !== undefined) { $("strengthRange").min = lim.min_strength_pct; $("strengthRange").max = lim.max_strength_pct; }
+  $("zeroBadge").textContent = s.zero_rad ? `${I18N.zeroSet} ${s.zero_rad.toFixed(3)} rad` : I18N.zeroNone;
+  $("zeroBadge").className = "badge" + (s.zero_rad ? " ok" : "");
+  if (!idInit && s.motor_id !== undefined) { idInit = true; $("motorId").value = s.motor_id; }
+  if (s.connected && s.motor_id !== undefined) $("motorId").value = s.motor_id;
+  updateCount();
+  if (lim.max_speed_rad_s !== undefined) $("speedRange").max = lim.max_speed_rad_s;
+}
+
+function showAsk(e) {
+  const known = e.topic === "calibration";  // only the calibration look has an explanation; any other question shows just its text
+  $("askTitle").textContent = known ? I18N.askTitle : "";
+  $("askWhy").textContent = known ? I18N.askWhy : "";
+  $("askHints").replaceChildren(...(known ? [I18N.askYesHint, I18N.askNoHint] : []).map((x) => Object.assign(document.createElement("li"), { textContent: x })));
+  $("askTitle").hidden = $("askWhy").hidden = $("askHints").hidden = !known;
+  $("askText").textContent = e.text.replace(/\s*\[Enter[^\]]*\]\s*$/, "");  // the "[Enter = yes, n = no]" hint is for the terminal; the dialog has buttons
+  const box = $("askButtons");
+  box.replaceChildren();
+  for (const choice of e.choices) {
+    const b = document.createElement("button");
+    b.textContent = I18N[choice];
+    if (choice !== "no") b.className = "primary";
+    b.addEventListener("click", () => call("answer", { qid: e.qid, value: choice }));
+    box.append(b);
+  }
+  $("ask").dataset.qid = e.qid;
+  if (!$("ask").open) $("ask").showModal();
+}
+
+function handle(e) {
+  if (e.id !== undefined) { if (e.id <= lastId) return; lastId = e.id; }
+  if (e.type === "state") {
+    if (e.lang && e.lang !== LANG) applyLang(e.lang);  // another tab (or the server) switched the language
+    if (e.busy && e.busy !== prevBusy) jobHeader(e.busy, e.at);
+    prevBusy = e.busy;
+    state = e; render(); showTelemetry(e.telemetry);
+  }
+  else if (e.type === "msg") line(e.text, msgClass(e), e.at);
+  else if (e.type === "row") { line(rowText(e), e.kind === "step" ? "step dim" : "dim", e.at, e.ok ? e.kind : "no rx"); showTelemetry(e); }
+  else if (e.type === "ask") showAsk(e);
+  else if (e.type === "ask_done" && String(e.qid) === $("ask").dataset.qid && $("ask").open) $("ask").close();
+}
+
+async function call(action, body = {}) {
+  try {
+    const r = await fetch("/api/" + action, { method: "POST", headers: { "Content-Type": "application/json", "X-Dex1-Token": TOKEN }, body: JSON.stringify(body) });
+    if (!r.ok) line((await r.json()).error || r.statusText, "error");
+  } catch (err) { line(String(err), "error"); }
+}
+
+function numberOrNull(id) { const v = $(id).value.trim(); return v === "" ? null : Number(v); }
+$("connect").onclick = () => call("connect", { id: numberOrNull("motorId") });
+$("disconnect").onclick = () => call("disconnect");
+$("preflight").onclick = () => call("preflight");
+const moveBody = (extra = {}) => ({ speed: numberOrNull("speedRange"), strength: numberOrNull("strengthRange"), ...extra });
+$("open").onclick = () => call("open", moveBody());
+$("close").onclick = () => call("close", moveBody());
+$("go").onclick = () => call("go", moveBody({ to: numberOrNull("angle") }));
+$("zero").onclick = () => call("zero");
+$("angleRange").oninput = (ev) => { $("angle").value = ev.target.value; };
+$("angleRange").onchange = () => { if ($("onRelease").checked && !$("go").disabled) $("go").click(); };
+$("angle").oninput = (ev) => { if (ev.target.value !== "") $("angleRange").value = ev.target.value; };
+$("speedRange").oninput = (ev) => { $("speedVal").textContent = `${Number(ev.target.value).toFixed(1)} rad/s`; };
+$("strengthRange").oninput = (ev) => { $("strengthVal").textContent = `${ev.target.value} %`; };
+$("stop").onclick = () => call("stop");
+document.querySelectorAll("[data-lang]").forEach((b) => { b.onclick = () => { applyLang(b.dataset.lang); render(); call("lang", { lang: b.dataset.lang }); }; });
+$("ask").addEventListener("cancel", (ev) => ev.preventDefault());
+document.addEventListener("keydown", (ev) => { if (ev.key === "Escape" && !$("ask").open) call("stop"); });
+$("showSteps").onchange = (ev) => logEl.classList.toggle("hide-steps", !ev.target.checked);
+function logText() {
+  const head = ["# dex1 gui log", `# saved ${new Date().toISOString()}`, `# transport ${state.transport || "-"}, motor id ${state.motor_id ?? "-"}`,
+                `# jsonl log ${state.log_path || "-"}`, `# language ${LANG}`, ""];
+  return head.concat(saved).join("\n") + "\n";
+}
+$("clear").onclick = () => { logEl.replaceChildren(); saved.length = 0; updateCount(); };
+$("copy").onclick = async () => {
+  try { await navigator.clipboard.writeText(logText()); line(I18N.copied, "ok"); } catch (err) { line(String(err), "warn"); }
+};
+$("save").onclick = () => {
+  const d = new Date(), name = `dex1-log-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}.txt`;
+  const url = URL.createObjectURL(new Blob([logText()], { type: "text/plain;charset=utf-8" }));
+  const a = document.createElement("a");
+  a.href = url; a.download = name; document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  line(I18N.saved + name, "ok");
+};
+$("filter").onchange = (ev) => { logEl.classList.toggle("f-msgs", ev.target.value === "msgs"); logEl.classList.toggle("f-bad", ev.target.value === "bad"); };
+
+const source = new EventSource("/events?token=" + encodeURIComponent(TOKEN));
+source.onmessage = (m) => handle(JSON.parse(m.data));
+source.onerror = () => { $("pill").className = "pill"; $("pillText").textContent = I18N.lost; };
+render();
+</script>
+</body>
+</html>

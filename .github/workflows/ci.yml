@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: tests (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install (pyftdi and pyserial are imported by the tests; no adapter is needed)
+        run: pip install -e ".[dev,espprog]"
+      - name: Unit tests (mock transport only; no hand, no adapter)
+        run: pytest
+      - name: Protocol self-test against recorded vendor SDK frames
+        run: dex1 selftest

@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dex1-rs485"
+version = "0.1.0"
+description = "Drive Unitree Dex1-1 grippers (M4010, 6 Mbaud RS-485) from a PC with an ESP-Prog (FT2232H) and a MAX3485 module."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "Masayuki Kobayashi" }]
+keywords = ["unitree", "dex1-1", "gripper", "rs485", "esp-prog", "max3485", "robotics"]
+classifiers = ["Programming Language :: Python :: 3", "Topic :: System :: Hardware"]
+
+[project.urls]
+Homepage = "https://github.com/masayuki-kobayashi-aicle/dex1-console"
+Issues = "https://github.com/masayuki-kobayashi-aicle/dex1-console/issues"
+
+[project.optional-dependencies]
+espprog = ["pyftdi>=0.55", "pyserial>=3.5"]
+rerun = ["rerun-sdk==0.37.1"]
+dev = ["pytest>=8"]
+
+[project.scripts]
+dex1 = "dex1_rs485.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"dex1_rs485.gui" = ["static/*.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
