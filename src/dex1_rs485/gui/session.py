@@ -10,7 +10,7 @@ from ..cli import make_transport
 from ..calibrate import auto_zero
 from ..config import Config, HandConfig
 from ..i18n import language, set_language, t
-from ..jsonl_log import JsonlLog, Log
+from ..jsonl_log import JsonlLog, Log, NullLog
 from ..link import Link, LinkError
 from ..motion import Controller, Pacer
 from ..preflight import PREFLIGHT_STAGES, run_preflight
@@ -66,8 +66,9 @@ def _motor_id(params: dict) -> int | None:
 
 class HandSession:
     def __init__(self, cfg: Config, bus: EventBus, skip_preflight: bool = False, answer_timeout_s: float | None = None,
-                 pacer_factory=Pacer) -> None:
+                 pacer_factory=Pacer, write_log: bool = True) -> None:
         self.cfg, self.bus, self.skip_preflight, self.pacer_factory = cfg, bus, skip_preflight, pacer_factory
+        self.write_log = write_log
         self.prompter = WebPrompter(bus) if answer_timeout_s is None else WebPrompter(bus, answer_timeout_s)
         self.ctrl: Controller | None = None
         self.preflight_ok: bool | None = None
@@ -196,7 +197,8 @@ class HandSession:
         if self.cfg.hand.motor_id != HandConfig().motor_id:
             self._say(t("gui_id_note", id=self.cfg.hand.motor_id), "warn")
         header = {"hand": asdict(self.cfg.hand), "limits": asdict(self.cfg.limits)}
-        log = BroadcastLog(JsonlLog(self.cfg.log_dir, "gui", header), self.bus, self._on_reply)
+        inner = JsonlLog(self.cfg.log_dir, "gui", header) if self.write_log else NullLog()
+        log = BroadcastLog(inner, self.bus, self._on_reply)
         try:
             link = Link(make_transport(self.cfg), self.cfg.hand.motor_id, self.cfg.transport.reply_wait_s, log)
         except BaseException:
@@ -204,7 +206,8 @@ class HandSession:
             raise
         self.ctrl = Controller(link, self.cfg.hand, self.cfg.limits, self.pacer_factory, self._say, self._cancel.is_set)
         self.preflight_ok = None
-        self._say(t("log_path", path=log.path))
+        if log.path:
+            self._say(t("log_path", path=log.path))
         self._say(t("gui_connected", id=self.cfg.hand.motor_id), "ok")
 
     def _disconnect(self) -> None:

@@ -76,7 +76,6 @@ disabled until the preflight has passed (`--skip-preflight` lifts that). `Esc` o
 Try it without hardware: `dex1 gui --transport mock`.
 
 Logs are JSONL in `~/.local/share/dex1-rs485/logs` (change with `--log-dir`, disable with `--no-log`).
-Known issue: `dex1 gui` accepts `--no-log` but ignores it and always writes a log; use `--log-dir` to choose where.
 Configuration: [examples/dex1.toml](examples/dex1.toml), passed with `--config`. Unknown keys are rejected.
 
 ## License

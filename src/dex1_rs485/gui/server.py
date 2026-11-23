@@ -154,9 +154,10 @@ class Handler(BaseHTTPRequestHandler):
         return session.do(action, params)
 
 
-def serve(cfg: Config, port: int = DEFAULT_PORT, open_browser: bool = True, skip_preflight: bool = False) -> int:
+def serve(cfg: Config, port: int = DEFAULT_PORT, open_browser: bool = True, skip_preflight: bool = False,
+          write_log: bool = True) -> int:
     bus = EventBus()
-    session = HandSession(cfg, bus, skip_preflight)
+    session = HandSession(cfg, bus, skip_preflight, write_log=write_log)
     server = GuiServer(port, session, bus)
     print(t("gui_url", url=server.url), flush=True)
     if open_browser:

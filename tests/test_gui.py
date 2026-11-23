@@ -307,3 +307,16 @@ def test_telemetry_and_rows_carry_the_torque_reading(gui):
     wait_idle(gui)
     assert "torque" in gui.session.state()["telemetry"]
     assert any(e["type"] == "row" and "torque" in e for e in gui.bus._history)
+
+
+@pytest.mark.parametrize("write_log", [True, False])
+def test_write_log_flag_controls_the_jsonl_file(tmp_path, write_log):
+    cfg = replace(Config(), transport=TransportConfig(kind="mock"), log_dir=str(tmp_path))
+    session = HandSession(cfg, EventBus(), write_log=write_log)
+    session.do("connect", {})
+    session._thread.join(5)
+    assert session.state()["connected"] is True
+    assert bool(session.state()["log_path"]) is write_log
+    assert len(list(tmp_path.glob("*.jsonl"))) == (1 if write_log else 0)
+    assert any(e.get("text", "").startswith(("log:", "ログ:")) for e in session.bus._history) is write_log
+    session.close()
