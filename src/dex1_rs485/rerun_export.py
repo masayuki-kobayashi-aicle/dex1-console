@@ -9,6 +9,13 @@ import re
 from pathlib import Path
 
 LABEL_OK = re.compile(r"^[A-Za-z0-9_.|+ -]+$")
+# Rerun 0.43+ rewrites an application id that has anything but these (and warns), so the id is made safe here
+# and the label itself is shown as the recording name.
+APP_ID_UNSAFE = re.compile(r"[^A-Za-z0-9_ -]")
+
+
+def app_id_for(label: str) -> str:
+    return APP_ID_UNSAFE.sub("-", label)
 
 
 def load_rows(path: Path) -> list[dict]:
@@ -28,12 +35,13 @@ def export(log: Path, out: Path, label: str, video: Path | None = None, video_of
     except ImportError as e:
         raise RuntimeError("needs rerun-sdk: pip install 'dex1-rs485[rerun]'") from e
     rows = [r for r in load_rows(log) if "t" in r]
-    rr.init(label)
+    rr.init(app_id_for(label))
     views = [rrb.TimeSeriesView(origin="position", name="position [rad]"),
              rrb.TimeSeriesView(origin="motor", name="torque / speed / temperature / voltage"),
              rrb.TimeSeriesView(origin="reply", name="reply delay [ms] / missed")]
     layout = rrb.Horizontal(rrb.Spatial2DView(origin="video", name="video"), rrb.Vertical(*views)) if video else rrb.Vertical(*views)
     rr.save(out, default_blueprint=rrb.Blueprint(layout))
+    rr.send_recording_name(label)
     if video:
         asset = rr.AssetVideo(path=video)
         rr.log("video", asset, static=True)
