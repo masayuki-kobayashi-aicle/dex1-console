@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.1.1 (2026-11-24, pre-release)
 
 - Fix: `dex1 gui --no-log` was accepted but ignored, and the GUI always wrote a JSONL log. It now writes none (the log view and
   the Save button still work). Found after 0.1.0, which has this bug.

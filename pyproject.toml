@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dex1-rs485"
-version = "0.1.0"
+version = "0.1.1"
 description = "Drive Unitree Dex1-1 grippers (M4010, 6 Mbaud RS-485) from a PC with an ESP-Prog (FT2232H) and a MAX3485 module."
 readme = "README.md"
 requires-python = ">=3.11"
