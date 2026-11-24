@@ -21,8 +21,8 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
-      - name: Install (pyftdi and pyserial are imported by the tests; no adapter is needed)
-        run: pip install -e ".[dev,espprog]"
+      - name: Install (pyftdi and pyserial are imported by the tests, rerun by the export test; no adapter is needed)
+        run: pip install -e ".[dev,espprog,rerun]"
       - name: Unit tests (mock transport only; no hand, no adapter)
         run: pytest
       - name: Protocol self-test against recorded vendor SDK frames

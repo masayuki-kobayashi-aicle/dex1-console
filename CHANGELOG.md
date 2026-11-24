@@ -4,6 +4,10 @@
 
 - Fix: `dex1 gui --no-log` was accepted but ignored, and the GUI always wrote a JSONL log. It now writes none (the log view and
   the Save button still work). Found after 0.1.0, which has this bug.
+- Rerun export: the `rerun` extra is now `rerun-sdk==0.43.2` (was 0.37.1). Rerun 0.43 rewrites an application id that contains
+  `.`, `|` or `+` and warns, so `export-rerun` now uses a safe id (`.|+` become `-`) and shows `--label` as the recording name.
+  Checked with `rerun rrd verify` and a mock log, with and without `--video`; not checked by looking at the Viewer.
+- CI installs the `rerun` extra and has an export test, so a Rerun bump is now tested.
 
 ## 0.1.0 (2026-11-23, pre-release)
 
